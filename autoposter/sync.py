@@ -1,4 +1,3 @@
-import pathlib
 import threading
 
 shutdown_event = threading.Event()
@@ -23,12 +22,7 @@ class Arbitrator:
 
 # todo: maybe TTL
 _chat_pool = dict()
-_path_pool = dict()
 
 
 def get_chat_lock(chat_id: int) -> threading.Lock:
     return _chat_pool.setdefault(chat_id, threading.Lock())
-
-
-def get_path_lock(path: pathlib.Path) -> threading.Lock:
-    return _path_pool.setdefault(path, threading.Lock())
