@@ -1,0 +1,24 @@
+version: '3.9'
+services:
+  autoposter:
+    build: .
+    image: autoposter
+    container_name: autoposter
+
+    configs: [ jobs ]
+    secrets: [ credentials ]
+    environment:
+      - JOBS_FILE=/jobs
+      - CREDENTIALS_FILE=/run/secrets/credentials
+
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+configs:
+  jobs:
+    file: ./jobs.json
+
+secrets:
+  credentials:
+    file: ./credentials.json

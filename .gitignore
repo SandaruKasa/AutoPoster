@@ -8,3 +8,5 @@ __pycache__/
 
 *.json
 *.session
+
+docker-compose.override.yml

@@ -1,0 +1,10 @@
+services:
+  autoposter:
+    volumes:
+      - ./autoposter:/usr/src/autoposter:ro
+      - ./sandaru.session:/usr/src/sandaru.session
+    environment:
+      - LOGLEVEL=DEBUG
+      - DEBUG=1
+    restart: "no"
+    tty: true
