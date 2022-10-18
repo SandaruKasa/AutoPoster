@@ -1,0 +1,2 @@
+APScheduler~=4.0.0a2
+Pyrogram~=2.0.59
