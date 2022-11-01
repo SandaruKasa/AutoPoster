@@ -2,14 +2,34 @@ import logging
 import os
 from pathlib import Path
 
-from . import jobs
+import pydantic
 
-logging.basicConfig(
-    handlers=[logging.StreamHandler()],
-    level=os.getenv("LOGLEVEL", "INFO").upper(),
-    format="[%(asctime)s.%(msecs)03d] [%(name)s] [%(levelname)s]: %(message)s",
-    datefmt=r"%Y-%m-%dT%H-%M-%S",
-)
+from .posters import Poster
+from .selectors import Selector
 
 CONFIG_DIR: Path = Path(os.getenv("CONFIG_DIR", "conf.d")).absolute()
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+class Job(pydantic.BaseModel):
+    name: str
+    selector: Selector
+    poster: Poster
+
+    @pydantic.validator("poster", pre=True)
+    def _propagate_name(cls, field_kwargs: dict, values: dict):
+        return {"name": values["name"], **field_kwargs}
+
+    async def do(self):
+        logging.getLogger(self.name).critical(self.dict())
+        contents = self.selector.choose()
+        try:
+            async with self.poster:
+                if contents is None:
+                    await self.poster.on_no_candidates()
+                else:
+                    await self.poster.post(contents)
+                    self.selector.dispose(contents)
+        except:
+            self.poster.logger.error("Error posting", exc_info=True)
+            raise

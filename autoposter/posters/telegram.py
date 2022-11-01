@@ -3,10 +3,10 @@ from pathlib import Path
 import pydantic
 import pyrogram
 
-from . import FilePostingJob
+from . import Poster
 
 
-class TelegramJob(FilePostingJob):
+class TelegramPoster(Poster[Path]):
     class Config:
         arbitrary_types_allowed = True
 
@@ -20,7 +20,7 @@ class TelegramJob(FilePostingJob):
 
         return pyrogram.client.Client(
             name=values["name"],
-            workdir=str(TelegramJob._SESSIONS_DIR),
+            workdir=str(TelegramPoster._SESSIONS_DIR),
             **credentials,
             no_updates=True,
         )

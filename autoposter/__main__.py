@@ -4,21 +4,17 @@ assert __package__, "Please, run me as a module"
 import argparse
 import asyncio
 import json
+import logging
+import os
 
-from . import CONFIG_DIR, jobs
+from . import CONFIG_DIR, Job
 
-# TODO: logging
-
-
-# TODO: move `count` downstream
-async def main(**job_kwargs):
-    cls = jobs.get_cls(job_kwargs.pop("type"))
-    count = int(job_kwargs.pop("count", 1))
-    job = cls(**job_kwargs)
-    async with job:
-        for _ in range(count):
-            await job.do()
-
+logging.basicConfig(
+    handlers=[logging.StreamHandler()],
+    level=os.getenv("LOGLEVEL", "INFO").upper(),
+    format="[%(asctime)s.%(msecs)03d] [%(name)s] [%(levelname)s]: %(message)s",
+    datefmt=r"%Y-%m-%dT%H-%M-%S",
+)
 
 parser = argparse.ArgumentParser(prog="autoposter")
 parser.add_argument("NAME")
@@ -28,4 +24,5 @@ with open(CONFIG_DIR / f"{args.NAME}.json") as f:
     parsed_config = json.load(f)
 
 
-asyncio.run(main(name=args.NAME, **parsed_config))
+# TODO: add `count`
+asyncio.run(Job(name=args.NAME, **parsed_config).do())
