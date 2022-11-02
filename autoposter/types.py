@@ -1,7 +1,39 @@
 import abc
+import dataclasses
+import enum
 import typing
+from pathlib import Path
 
 import pydantic
+
+
+# TODO: StrEnum & auto() in 3.11
+class SortBy(enum.Enum):
+    FILENAME = "filename"
+    CTIME = "ctime"
+    MTIME = "mtime"
+    RANDOM = "random"
+
+
+# TODO: StrEnum & auto() in 3.11
+class MediaType(enum.Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+    GIF = "gif"
+    DOCUMENT = "document"
+
+
+@dataclasses.dataclass
+class Media:
+    source: Path
+    media_type: MediaType
+
+
+@dataclasses.dataclass
+class Post:
+    _source: Path
+    media: list[Media]
+    caption: str = ""
 
 
 class SubclassedModel(pydantic.BaseModel, abc.ABC):

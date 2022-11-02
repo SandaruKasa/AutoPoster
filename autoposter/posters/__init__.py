@@ -2,12 +2,10 @@ import abc
 import logging
 import typing
 
-from ..utils import SubclassedModel
-
-T = typing.TypeVar("T")
+from ..types import Post, SubclassedModel
 
 
-class Poster(typing.Generic[T], SubclassedModel, abc.ABC):
+class Poster(SubclassedModel, abc.ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> typing.Type["Poster"] | None:
         match name.lower():
@@ -25,7 +23,7 @@ class Poster(typing.Generic[T], SubclassedModel, abc.ABC):
         return logging.getLogger(self.name)
 
     @abc.abstractmethod
-    async def post(self, selected: T):
+    async def post(self, selected: Post):
         pass
 
     @abc.abstractmethod

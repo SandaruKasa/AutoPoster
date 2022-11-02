@@ -3,10 +3,11 @@ from pathlib import Path
 import pydantic
 import pyrogram
 
+from ..types import Media, MediaType, Post
 from . import Poster
 
 
-class TelegramPoster(Poster[Path]):
+class TelegramPoster(Poster):
     class Config:
         arbitrary_types_allowed = True
 
@@ -17,7 +18,6 @@ class TelegramPoster(Poster[Path]):
 
     @pydantic.validator("client", pre=True)
     def _make_client(cls, credentials: dict, values: dict) -> pyrogram.client.Client:
-
         return pyrogram.client.Client(
             name=values["name"],
             workdir=str(TelegramPoster._SESSIONS_DIR),
@@ -25,9 +25,9 @@ class TelegramPoster(Poster[Path]):
             no_updates=True,
         )
 
-    async def post(self, source: Path):
+    async def post(self, contents: Post):
         # TODO: implement me
-        raise NotImplementedError()
+        raise NotImplementedError(contents)
 
     async def __aenter__(self):
         return await self.client.__aenter__()
