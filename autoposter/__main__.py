@@ -24,5 +24,9 @@ with open(CONFIG_DIR / f"{args.NAME}.json") as f:
     parsed_config = json.load(f)
 
 
-# TODO: add `count`
-asyncio.run(Job(name=args.NAME, **parsed_config).do())
+async def main():
+    # TODO: add `count`
+    await Job(name=args.NAME, **parsed_config).do()
+
+
+asyncio.run(main())

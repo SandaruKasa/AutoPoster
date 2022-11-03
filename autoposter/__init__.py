@@ -37,6 +37,9 @@ class Selector(pydantic.BaseModel):
             )  # can be done more efficiently with sort_n
         ]
 
+    # TODO: make classmethod, pass SortBy as argument,
+    #       use different sorting for choosing a post
+    #       and ordering media inside a post
     def _sort(self, files: list[Path]) -> list[Path]:
         match self.sort_by:
             case SortBy.FILENAME:
@@ -114,6 +117,6 @@ class Job(pydantic.BaseModel):
                     self.selector.dispose(post)
             if len(posts) < self.count:
                 await self.poster.on_no_candidates()
-        except:
-            self.poster.logger.error("Error posting", exc_info=True)
+        except Exception as e:
+            self.poster.logger.error("Error posting: %s", str(e), exc_info=True)
             raise
