@@ -15,9 +15,23 @@ CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 random.seed()
 
 
+def sort_paths(sort_by: SortBy, paths: list[Path]) -> list[Path]:
+    match sort_by:
+        case SortBy.FILENAME:
+            return sorted(paths)
+        case SortBy.CTIME:
+            return sorted(paths, key=os.path.getctime)
+        case SortBy.MTIME:
+            return sorted(paths, key=os.path.getmtime)
+        case SortBy.RANDOM:
+            random.shuffle(paths)
+            return paths
+
+
 class Selector(pydantic.BaseModel):
     source: Path
-    sort_by: SortBy
+    post_order: SortBy
+    media_order: SortBy | None
     delete_posted: bool = False
     _POSTED_PREFIX: str = "posted_"  # static (in a Java sense) field
 
@@ -33,24 +47,9 @@ class Selector(pydantic.BaseModel):
         return [
             self._construct_post(candidate)
             for candidate in (
-                self._sort(candidates)[:n]
+                sort_paths(self.post_order, candidates)[:n]
             )  # can be done more efficiently with sort_n
         ]
-
-    # TODO: make classmethod, pass SortBy as argument,
-    #       use different sorting for choosing a post
-    #       and ordering media inside a post
-    def _sort(self, files: list[Path]) -> list[Path]:
-        match self.sort_by:
-            case SortBy.FILENAME:
-                return sorted(files)
-            case SortBy.CTIME:
-                return sorted(files, key=os.path.getctime)
-            case SortBy.MTIME:
-                return sorted(files, key=os.path.getmtime)
-            case SortBy.RANDOM:
-                random.shuffle(files)
-                return files
 
     def _construct_post(self, source: Path) -> Post:
         if source.is_dir():
@@ -60,7 +59,13 @@ class Selector(pydantic.BaseModel):
         assert all(p.is_file() for p in files)
         caption = ""
         media = []
-        for file in self._sort(files):
+        for file in sort_paths(
+            self.media_order
+            or (
+                SortBy.FILENAME if self.post_order == SortBy.RANDOM else self.post_order
+            ),
+            files,
+        ):
             x = self._fetch_from_file(file)
             if isinstance(x, str):
                 if caption:
