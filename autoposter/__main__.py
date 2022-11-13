@@ -1,11 +1,11 @@
-# FIXME: this check will break in 3.11 or 3.12 if I recall correctly
+# FIXME: this check will break in 3.12 if I recall correctly
 assert __package__, "Please, run me as a module"
 
 import argparse
 import asyncio
-import json
 import logging
 import os
+import tomllib
 
 from . import CONFIG_DIR, Job
 
@@ -19,14 +19,14 @@ logging.basicConfig(
 parser = argparse.ArgumentParser(prog="autoposter")
 parser.add_argument("NAME")
 args = parser.parse_args()
-with open(CONFIG_DIR / f"{args.NAME}.json") as f:
-    # TODO: switch to TOML when 3.11 comes out?
-    parsed_config = json.load(f)
+with open(CONFIG_DIR / f"{args.NAME}.toml", "rb") as f:
+    parsed_config: dict = tomllib.load(f)
+    parsed_config.setdefault("name", args.NAME)
 
 
 async def main():
-    # TODO: add `count`
-    await Job(name=args.NAME, **parsed_config).do()
+    job = Job(**parsed_config)
+    await job.do()
 
 
 asyncio.run(main())

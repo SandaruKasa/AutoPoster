@@ -21,12 +21,11 @@ class TelegramPoster(Poster):
 
     @pydantic.validator("client", pre=True)
     def _make_client(cls, credentials: dict, values: dict) -> pyrogram.client.Client:
-        return pyrogram.client.Client(
-            name=values["name"],
-            workdir=str(TelegramPoster._SESSIONS_DIR),
-            **credentials,
-            no_updates=True,
-        )
+        kwargs = credentials
+        kwargs.setdefault("name", values["name"])
+        kwargs.setdefault("workdir", str(TelegramPoster._SESSIONS_DIR))
+        kwargs["no_updates"] = True
+        return pyrogram.client.Client(**kwargs)
 
     # FIXME: breaks on GIFs.
     #        Because even if you send them as documents,

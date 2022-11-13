@@ -7,20 +7,18 @@ from pathlib import Path
 import pydantic
 
 
-# TODO: StrEnum & auto() in 3.11
-class SortBy(enum.Enum):
-    FILENAME = "filename"
-    CTIME = "ctime"
-    MTIME = "mtime"
-    RANDOM = "random"
+class SortBy(enum.StrEnum):
+    FILENAME = enum.auto()
+    CTIME = enum.auto()
+    MTIME = enum.auto()
+    RANDOM = enum.auto()
 
 
-# TODO: StrEnum & auto() in 3.11
-class MediaType(enum.Enum):
-    IMAGE = "image"
-    VIDEO = "video"
-    GIF = "gif"
-    DOCUMENT = "document"
+class MediaType(enum.StrEnum):
+    IMAGE = enum.auto()
+    VIDEO = enum.auto()
+    GIF = enum.auto()
+    DOCUMENT = enum.auto()
 
 
 @dataclasses.dataclass
@@ -57,6 +55,5 @@ class SubclassedModel(pydantic.BaseModel, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    # TODO: replace with `-> Type[Self]` when 3.11 comes out
-    def _get_subclass(cls, name: str) -> typing.Type["SubclassedModel"] | None:
+    def _get_subclass(cls, name: str) -> typing.Type[typing.Self] | None:
         pass

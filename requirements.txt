@@ -1,2 +1,2 @@
 pydantic~=1.10.2
-# pyrogram~=2.0.59 # For posters.telegram
+pyrogram~=2.0.59 # For posters.telegram
