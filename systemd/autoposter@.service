@@ -1,0 +1,13 @@
+[Unit]
+Description=AutoPoster script: %I
+
+[Service]
+Type=simple
+
+User=username
+Group=username
+WorkingDirectory=/home/username/autoposter
+
+# https://superuser.com/a/1282178
+Environment="ARGS=%I"
+ExecStart=/home/username/autoposter/venv/bin/python -m autoposter $ARGS

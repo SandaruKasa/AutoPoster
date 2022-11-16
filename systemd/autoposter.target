@@ -1,0 +1,7 @@
+[Unit]
+Description=AutoPoster script's timers
+Wants=network-online.target
+After=network-online.target
+
+[Install]
+WantedBy=timers.target

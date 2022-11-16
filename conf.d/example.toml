@@ -1,0 +1,15 @@
+['']
+count = 2
+
+[selector]
+type = "file"
+source = "some/path/to/folder/"
+post_order = "mtime"
+
+[poster]
+type = "telegram"
+chat = -1001408858031
+
+[poster.client]
+api_id = 17349
+api_hash = "344583e45741c457fe1862106095a5eb"

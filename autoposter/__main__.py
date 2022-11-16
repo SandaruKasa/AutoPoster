@@ -18,10 +18,12 @@ logging.basicConfig(
 
 parser = argparse.ArgumentParser(prog="autoposter")
 parser.add_argument("NAME")
+parser.add_argument("--count", type=int, default=1)
 args = parser.parse_args()
 with open(CONFIG_DIR / f"{args.NAME}.toml", "rb") as f:
     parsed_config: dict = tomllib.load(f)
     parsed_config.setdefault("name", args.NAME)
+    parsed_config.setdefault("count", args.count)
 
 
 async def main():

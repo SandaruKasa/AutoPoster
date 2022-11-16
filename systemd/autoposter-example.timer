@@ -1,0 +1,14 @@
+[Unit]
+Description=AutoPoster timer: %N
+
+[Timer]
+# Is $ systemd-escape --template autoposter@.service -- 'example --count 3'
+Unit=autoposter@example\x20\x2d\x2dcount\x203.service
+
+# See systemd.time(7)
+# This example: each day between 16 and 17 o'clock local time
+OnCalendar=*-*-* 16:00:00
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=autoposter.target

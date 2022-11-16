@@ -14,14 +14,13 @@ class TelegramPoster(Poster):
     class Config:
         arbitrary_types_allowed = True
 
-    client: pyrogram.client.Client = pydantic.Field(alias="credentials")
+    client: pyrogram.client.Client
 
     # TODO: use a subdir?
     _SESSIONS_DIR: Path = Path.cwd()
 
     @pydantic.validator("client", pre=True)
-    def _make_client(cls, credentials: dict, values: dict) -> pyrogram.client.Client:
-        kwargs = credentials
+    def _make_client(cls, kwargs: dict, values: dict) -> pyrogram.client.Client:
         kwargs.setdefault("name", values["name"])
         kwargs.setdefault("workdir", str(TelegramPoster._SESSIONS_DIR))
         kwargs["no_updates"] = True
