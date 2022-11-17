@@ -17,6 +17,7 @@ def _split_list(l: list[T], n: int) -> list[list[T]]:
 
 class TelegramPoster(Poster):
     chat: int | str
+    reply_when_splitting: bool = True
 
     class Config:
         arbitrary_types_allowed = True
@@ -35,10 +36,14 @@ class TelegramPoster(Poster):
 
     async def post(self, post: Post) -> list[list[Message]]:
         assert post.caption or post.media
-        # TODO: reply to previous parts
-        return [
-            await self.post_no_split(piece) for piece in TelegramPoster.split_post(post)
-        ]
+        result = []
+        reply_ro_message_id = None
+        for piece in TelegramPoster.split_post(post):
+            posted = await self.post_no_split(piece, reply_ro_message_id)
+            result.append(posted)
+            if self.reply_when_splitting:
+                reply_ro_message_id = posted[0].id
+        return result
 
     # FIXME: breaks on mixing documents and non-documents together.
     #        Because there are photo/video media groups and there document media groups.
@@ -51,54 +56,88 @@ class TelegramPoster(Poster):
     #        So yeah, for now this code mixes "unmixable" types of media and gets
     #        a very "informative" [400 MEDIA_INVALID] back from Telegram.
     # Telegram has WONDERFUL api
-    async def post_no_split(self, post: Post) -> list[Message]:
+    async def post_no_split(
+        self,
+        post: Post,
+        reply_to_message_id: int | None = None,
+    ) -> list[Message]:
         assert post.caption or post.media
 
         match len(post.media):
             case 0:
-                return [await self.post_text(post.caption)]
+                return [
+                    await self.post_text(
+                        text=post.caption,
+                        reply_to_message_id=reply_to_message_id,
+                    )
+                ]
             case 1:
-                return [await self.post_one_media(post.media[0], post.caption)]
+                return [
+                    await self.post_one_media(
+                        media=post.media[0],
+                        caption=post.caption,
+                        reply_to_message_id=reply_to_message_id,
+                    )
+                ]
             case _:
-                return await self.post_media_group(post.media, post.caption)
+                return await self.post_media_group(
+                    media=post.media,
+                    caption=post.caption,
+                    reply_to_message_id=reply_to_message_id,
+                )
 
-    async def post_text(self, text: str) -> Message:
+    async def post_text(
+        self,
+        text: str,
+        reply_to_message_id: int | None = None,
+    ) -> Message:
         return await self.client.send_message(
             chat_id=self.chat,
             text=text,
+            reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
         )
 
-    async def post_one_media(self, media: Media, caption: str = "") -> Message:
+    async def post_one_media(
+        self,
+        media: Media,
+        caption: str = "",
+        reply_to_message_id: int | None = None,
+    ) -> Message:
         # Exercise for reader: try to spot similar code pieces
         match media.media_type:
             case MediaType.IMAGE:
-                return [
-                    await self.client.send_photo(
-                        chat_id=self.chat,
-                        photo=str(media.source),
-                        caption=caption,
-                    )  # type: ignore [return-value]
-                    # ^ We don't use pyrogram.Client.stop_transmission, so no None's
-                ]
+                result = await self.client.send_photo(
+                    chat_id=self.chat,
+                    photo=str(media.source),
+                    caption=caption,
+                    reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
+                )
             case MediaType.VIDEO:
-                return await self.client.send_video(
+                result = await self.client.send_video(
                     chat_id=self.chat,
                     video=str(media.source),
                     caption=caption,
-                )  # type: ignore [return-value]
-                # ^ We don't use pyrogram.Client.stop_transmission, so no None's
+                    reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
+                )
             # Telegram treats GIFs very poorly.
             # Let's minimize the damage and send GIFs as documents.
             case MediaType.DOCUMENT | MediaType.GIF:
-                return await self.client.send_document(
+                result = await self.client.send_document(
                     chat_id=self.chat,
                     document=str(media.source),
                     caption=caption,
-                )  # type: ignore [return-value]
-                # ^ We don't use pyrogram.Client.stop_transmission, so no None's
+                    reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
+                )
+        assert (
+            result is not None
+        )  # We don't use pyrogram.Client.stop_transmission, so no None's
+        return result
 
     async def post_media_group(
-        self, media: list[Media], caption: str = ""
+        self,
+        media: list[Media],
+        caption: str = "",
+        reply_to_message_id: int | None = None,
     ) -> list[Message]:
         assert len(media) <= 10, "Too many attachments"
         # Why can't Telegram accept 1-10 instead of 2-10? Because sOfTwArE.
@@ -110,6 +149,7 @@ class TelegramPoster(Poster):
         return await self.client.send_media_group(
             chat_id=self.chat,
             media=media_group,  # type: ignore [arg-type]
+            reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
         )
 
     @staticmethod
