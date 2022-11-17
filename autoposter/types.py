@@ -29,9 +29,9 @@ class Media:
 
 @dataclasses.dataclass
 class Post:
-    _source: Path
     media: list[Media]
     caption: str = ""
+    _source: Path | None = None
 
 
 class SubclassedModel(pydantic.BaseModel, abc.ABC):

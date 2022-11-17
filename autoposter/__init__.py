@@ -73,7 +73,7 @@ class Selector(pydantic.BaseModel):
                 caption += x
             else:
                 media.append(x)
-        return Post(source, media, caption)
+        return Post(media, caption, source)
 
     def _fetch_from_file(self, file: Path) -> Media | str:
         assert file.is_file()
@@ -92,6 +92,10 @@ class Selector(pydantic.BaseModel):
 
     def dispose(self, contents: Post):
         p = contents._source
+        if p is None:
+            logger = logging.getLogger("selector")
+            logger.warn("Post %s has no source path", str(contents))
+            return
         if self.delete_posted:
             if p.is_dir():
                 shutil.rmtree(p)
