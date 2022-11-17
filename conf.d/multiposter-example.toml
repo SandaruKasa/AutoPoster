@@ -1,0 +1,23 @@
+[selector]
+type = "file"
+source = "some/path/to/folder/"
+post_order = "filename"
+
+[poster]
+type = "multi"
+
+[[poster.posters]]
+type = "telegram"
+name = "first"
+chat = -1001408858031
+client = { name = "name" }
+
+[[poster.posters]]
+type = "highres"
+name = "second"
+chat = "@durov"
+
+[poster.posters.client]
+api_id = 17349
+api_hash = "344583e45741c457fe1862106095a5eb"
+bot_token = "1229760154:AAGoQ04f8625xhgj8E0lgFMWScxnjLc4If4"
