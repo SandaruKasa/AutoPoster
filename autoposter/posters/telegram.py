@@ -17,23 +17,32 @@ def _split_list(l: list[T], n: int) -> list[list[T]]:
 
 class TelegramPoster(Poster):
     chat: int | str
-    reply_when_splitting: bool = True
+    reply_when_splitting: bool = False
+    client: pyrogram.client.Client = pydantic.Field({})
 
     class Config:
         arbitrary_types_allowed = True
 
-    client: pyrogram.client.Client
-
     # TODO: use a subdir?
     _SESSIONS_DIR: Path = Path.cwd()
 
-    @pydantic.validator("client", pre=True)
+    @pydantic.validator("client", pre=True, always=True)
     def _make_client(cls, kwargs: dict, values: dict) -> pyrogram.client.Client:
         kwargs.setdefault("name", values["name"])
         kwargs.setdefault("workdir", str(TelegramPoster._SESSIONS_DIR))
         kwargs["no_updates"] = True
         return pyrogram.client.Client(**kwargs)
 
+    # FIXME: breaks on mixing documents and non-documents together.
+    #        Because there are photo/video media groups and there are document media groups.
+    #        Different things, cannot be mixed. Wow.
+    #        Then there are also GIFs. Probably THE most broken thing in telegram.
+    #        They cannot be sent as a part of ANY group.
+    #        (Note that mp4 videos with no audio stream are also considered to be GIFs. Sometimes.)
+    #        And I suspect there are also special media-groups for audio files,
+    #        but I do not feel like checking and ruining my mood even more.
+    #        So yeah, for now this code mixes "unmixable" types of media and gets
+    #        a very "informative" [400 MEDIA_INVALID] back from Telegram.
     async def post(self, post: Post) -> list[list[Message]]:
         assert post.caption or post.media
         result = []
@@ -45,16 +54,6 @@ class TelegramPoster(Poster):
                 reply_ro_message_id = posted[0].id
         return result
 
-    # FIXME: breaks on mixing documents and non-documents together.
-    #        Because there are photo/video media groups and there document media groups.
-    #        Separate things, cannot be mixed. Wow.
-    #        Then there are also GIFs. Probably THE most broken thing in telegram.
-    #        They cannot be sent as a part of ANY group.
-    #        (Note that mp4 videos with no audio stream are also considered to be GIFs. Sometimes.)
-    #        And I suspect there are also distinct media-groups for audio,
-    #        but I do not feel like checking and ruining my mood even more.
-    #        So yeah, for now this code mixes "unmixable" types of media and gets
-    #        a very "informative" [400 MEDIA_INVALID] back from Telegram.
     # Telegram has WONDERFUL api
     async def post_no_split(
         self,
@@ -176,6 +175,7 @@ class TelegramPoster(Poster):
             case MediaType.DOCUMENT | MediaType.GIF:
                 return InputMediaDocument(str(media.source))
 
+    # FIXME: repeated reconnection
     async def __aenter__(self):
         return await self.client.__aenter__()
 

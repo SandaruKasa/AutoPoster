@@ -14,6 +14,11 @@ class Poster(SubclassedModel, abc.ABC):
 
                 return TelegramPoster
 
+            case "telegram_highres" | "telegram-highres" | "highres":
+                from .telegram_highres import TelegramHighresPoster
+
+                return TelegramHighresPoster
+
         return None
 
     name: str
@@ -36,14 +41,3 @@ class Poster(SubclassedModel, abc.ABC):
 
     async def on_no_candidates(self):
         self.logger.warn("No more posts!")
-
-
-# lazy imports, kinda
-def get_cls(name: str) -> typing.Type[Poster]:
-    match name.lower():
-        case "telegram":
-            from .telegram import TelegramPoster
-
-            return TelegramPoster
-        case unknown:
-            raise ValueError(f"Unknown job type: {unknown!r}")
