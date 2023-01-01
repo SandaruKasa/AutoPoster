@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Generator
 
 from PIL import Image
-from pyrogram.errors import BotMethodInvalid
+from pyrogram.errors import BotMethodInvalid, PeerIdInvalid
 from pyrogram.types import InputMediaDocument, Message
 
 from ..types import Media, MediaType, Post
@@ -59,4 +59,6 @@ class TelegramHighresPoster(TelegramPoster):
                 chat_id=message.chat.id, message_id=message.id
             )
         except BotMethodInvalid:
+            return message
+        except PeerIdInvalid:  # for whatever reason you'll sometime get this
             return message
