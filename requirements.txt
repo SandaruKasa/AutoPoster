@@ -1,4 +1,4 @@
 pydantic ~= 1.10.2
 Pyrogram ~= 2.0.59 # For posters.telegram
 TgCrypto ~= 1.2.5  # To speed up Pyrogram, optional
-Pillow   ~= 9.3.0  # For posters.telegram.highres
+Pillow   ~= 9.3    # For posters.telegram.highres
