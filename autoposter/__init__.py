@@ -102,8 +102,13 @@ class Selector(pydantic.BaseModel):
             else:
                 p.unlink()
         else:
-            # TODO: prevent collisions or something
-            p.rename(p.with_name(Selector._POSTED_PREFIX + p.name))
+            new_name = p.with_stem(Selector._POSTED_PREFIX + p.stem)
+            i = 0
+            while new_name.exists():
+                i += 1
+                new_name = p.with_stem(f"{Selector._POSTED_PREFIX}{p.stem}_{i}")
+
+            p.rename(new_name)
 
 
 class Job(pydantic.BaseModel):
@@ -122,6 +127,7 @@ class Job(pydantic.BaseModel):
             posts = self.selector.choose(self.count)
             async with self.poster:
                 for post in posts:
+                    logging.getLogger(self.name).info(f"Posting {post}...")
                     await self.poster.post(post)
                     self.selector.dispose(post)
             if len(posts) < self.count:
