@@ -26,9 +26,13 @@ with open(CONFIG_DIR / f"{args.NAME}.toml", "rb") as f:
     parsed_config.setdefault("count", args.count)
 
 
-async def main():
+# returns exit code
+async def main() -> int:
     job = Job(**parsed_config)
-    await job.do()
+    is_ok = await job.do()
+    return 0 if is_ok else 1
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    exit_code = asyncio.run(main())
+    exit(exit_code)

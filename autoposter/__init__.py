@@ -121,7 +121,8 @@ class Job(pydantic.BaseModel):
     def _propagate_name(cls, field_kwargs: dict, values: dict):
         return {"name": values["name"], **field_kwargs}
 
-    async def do(self):
+    # returns is_ok (or throws)
+    async def do(self) -> bool:
         logging.getLogger(self.name).debug(f"Job parsed: {self.dict()}")
         try:
             posts = self.selector.choose(self.count)
@@ -132,6 +133,9 @@ class Job(pydantic.BaseModel):
                     self.selector.dispose(post)
             if len(posts) < self.count:
                 await self.poster.on_no_candidates()
+                return False
+            else:
+                return True
         except Exception as e:
             self.poster.logger.error("Error posting: %s", str(e), exc_info=True)
             raise
