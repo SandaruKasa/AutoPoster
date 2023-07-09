@@ -9,13 +9,13 @@ type = "multi"
 [[poster.posters]]
 type = "telegram"
 name = "first"
-chat = -1001408858031
+chat = "@durov"
 client = { name = "name" }
 
 [[poster.posters]]
 type = "highres"
 name = "second"
-chat = "@durov"
+chat = ["@onetimeusername", -1001408858031]
 
 [poster.posters.client]
 api_id = 17349

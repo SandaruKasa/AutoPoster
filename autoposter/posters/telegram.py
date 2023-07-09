@@ -1,3 +1,4 @@
+import asyncio
 import typing
 from pathlib import Path
 
@@ -9,6 +10,9 @@ from ..types import Media, MediaType, Post
 from . import Poster
 
 T = typing.TypeVar("T")
+ChatId = typing.Union[int, str]
+MessageOrGroup = list[Message]
+Messages = list[MessageOrGroup]
 
 
 def _split_list(l: list[T], n: int) -> list[list[T]]:
@@ -16,7 +20,7 @@ def _split_list(l: list[T], n: int) -> list[list[T]]:
 
 
 class TelegramPoster(Poster):
-    chat: int | str
+    chat: ChatId | list[ChatId]
     reply_when_splitting: bool = False
     client: pyrogram.client.Client = pydantic.Field({})
 
@@ -43,12 +47,34 @@ class TelegramPoster(Poster):
     #        but I do not feel like checking and ruining my mood even more.
     #        So yeah, for now this code mixes "unmixable" types of media and gets
     #        a very "informative" [400 MEDIA_INVALID] back from Telegram.
-    async def post(self, post: Post) -> list[list[Message]]:
+    async def post(self, post: Post) -> list[Messages]:
         assert post.caption or post.media
+        pieces = TelegramPoster.split_post(post)
+        return await asyncio.gather(
+            *(
+                self.post_to_one_chat(
+                    post_pieces=pieces,
+                    chat_id=chat_id,
+                )
+                for chat_id in (
+                    self.chat if isinstance(self.chat, list) else [self.chat]
+                )
+            )
+        )
+
+    async def post_to_one_chat(
+        self,
+        post_pieces: list[Post],
+        chat_id: ChatId,
+    ) -> Messages:
         result = []
         reply_ro_message_id = None
-        for piece in TelegramPoster.split_post(post):
-            posted = await self.post_no_split(piece, reply_ro_message_id)
+        for piece in post_pieces:
+            posted = await self.post_no_split(
+                post=piece,
+                chat_id=chat_id,
+                reply_to_message_id=reply_ro_message_id,
+            )
             result.append(posted)
             if self.reply_when_splitting:
                 reply_ro_message_id = posted[0].id
@@ -58,8 +84,9 @@ class TelegramPoster(Poster):
     async def post_no_split(
         self,
         post: Post,
+        chat_id: ChatId,
         reply_to_message_id: int | None = None,
-    ) -> list[Message]:
+    ) -> MessageOrGroup:
         assert post.caption or post.media
 
         match len(post.media):
@@ -67,6 +94,7 @@ class TelegramPoster(Poster):
                 return [
                     await self.post_text(
                         text=post.caption,
+                        chat_id=chat_id,
                         reply_to_message_id=reply_to_message_id,
                     )
                 ]
@@ -75,6 +103,7 @@ class TelegramPoster(Poster):
                     await self.post_one_media(
                         media=post.media[0],
                         caption=post.caption,
+                        chat_id=chat_id,
                         reply_to_message_id=reply_to_message_id,
                     )
                 ]
@@ -82,22 +111,25 @@ class TelegramPoster(Poster):
                 return await self.post_media_group(
                     media=post.media,
                     caption=post.caption,
+                    chat_id=chat_id,
                     reply_to_message_id=reply_to_message_id,
                 )
 
     async def post_text(
         self,
         text: str,
+        chat_id: ChatId,
         reply_to_message_id: int | None = None,
     ) -> Message:
         return await self.client.send_message(
-            chat_id=self.chat,
+            chat_id=chat_id,
             text=text,
             reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
         )
 
     async def post_one_media(
         self,
+        chat_id: ChatId,
         media: Media,
         caption: str = "",
         reply_to_message_id: int | None = None,
@@ -106,14 +138,14 @@ class TelegramPoster(Poster):
         match media.media_type:
             case MediaType.IMAGE:
                 result = await self.client.send_photo(
-                    chat_id=self.chat,
+                    chat_id=chat_id,
                     photo=str(media.source),
                     caption=caption,
                     reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
                 )
             case MediaType.VIDEO:
                 result = await self.client.send_video(
-                    chat_id=self.chat,
+                    chat_id=chat_id,
                     video=str(media.source),
                     caption=caption,
                     reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
@@ -122,7 +154,7 @@ class TelegramPoster(Poster):
             # Let's minimize the damage and send GIFs as documents.
             case MediaType.DOCUMENT | MediaType.GIF:
                 result = await self.client.send_document(
-                    chat_id=self.chat,
+                    chat_id=chat_id,
                     document=str(media.source),
                     caption=caption,
                     reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
@@ -134,6 +166,7 @@ class TelegramPoster(Poster):
 
     async def post_media_group(
         self,
+        chat_id: ChatId,
         media: list[Media],
         caption: str = "",
         reply_to_message_id: int | None = None,
@@ -146,7 +179,7 @@ class TelegramPoster(Poster):
         media_group = [TelegramPoster._wrap_media(m) for m in media]
         media_group[0].caption = caption
         return await self.client.send_media_group(
-            chat_id=self.chat,
+            chat_id=chat_id,
             media=media_group,  # type: ignore [arg-type]
             reply_to_message_id=reply_to_message_id,  # type: ignore [arg-type]
         )

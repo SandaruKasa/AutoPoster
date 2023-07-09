@@ -6,17 +6,20 @@ from pyrogram.errors import BotMethodInvalid, PeerIdInvalid
 from pyrogram.types import InputMediaDocument, Message
 
 from ..types import Media, MediaType, Post
-from .telegram import TelegramPoster
+from .telegram import ChatId, TelegramPoster
 
 
 class TelegramHighresPoster(TelegramPoster):
     async def post_no_split(
         self,
         post: Post,
+        chat_id: ChatId,
         reply_to_message_id: int | None = None,
     ) -> list[Message]:
         main_post = await super().post_no_split(
-            post=post, reply_to_message_id=reply_to_message_id
+            post=post,
+            chat_id=chat_id,
+            reply_to_message_id=reply_to_message_id,
         )
 
         match list(self.gather_compression_victims(post.media)):
