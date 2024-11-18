@@ -131,11 +131,11 @@ class Job(pydantic.BaseModel):
                     logging.getLogger(self.name).info(f"Posting {post}...")
                     await self.poster.post(post)
                     self.selector.dispose(post)
-            if len(posts) < self.count:
-                await self.poster.on_no_candidates()
-                return False
-            else:
-                return True
+                if len(posts) < self.count:
+                    await self.poster.on_no_candidates()
+                    return False
+                else:
+                    return True
         except Exception as e:
             self.poster.logger.error("Error posting: %s", str(e), exc_info=True)
             raise

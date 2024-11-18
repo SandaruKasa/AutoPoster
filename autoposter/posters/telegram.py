@@ -214,3 +214,11 @@ class TelegramPoster(Poster):
 
     async def __aexit__(self, *args):
         return await self.client.__aexit__(*args)
+
+    async def on_no_candidates(self):
+        await super().on_no_candidates()
+        message = await self.client.send_message(
+            text=f"AutoPoster ({self.name}): no more posts!",
+            chat_id=self.client.me.id,
+        )
+        await message.pin()
